@@ -1,0 +1,64 @@
+% After training, each face is associated with the HMM and in testing, each
+% test image of size 112 by 92 goes through the same block extraction,
+% feature extraction and quantization process. 
+% Each image after the training and testing stage is now represented by its
+% own observation sequence ( A vector of 52 Integerswhich each has a value
+% between 1 and 1260 as per the label in the generate data phase.
+function[ studentIndex, maxlogpseq] = facerec(Database,myDatabase,params,displayFileName);
+if(params.train == 0)
+    fprintf('Train System before Recognition process.\n');
+    return;
+end
+try
+    I = rgb2gray(I);
+end
+I = imread(Database); % where Database is my file name or where my pictures are stored. You can change to suit yours.
+I = imresize(I,[params.faceHeight params.faceWidth]);
+I = ordfilt2(I,params.train,true(3));
+blockStarts = 1;
+blockIndex = 0;
+numbBlocks = 0;
+blockCell = cell((params.faceHeight-params.blockHeight)/(params.blockHeight-params.blockOverlap)+1,1);
+for blockEnds = params.blockHeight:params.blockHeight-params.blockOverlap:params.faceHeight
+    numbBlocks = numbBlocks + 1 ;
+    block = I(blockStarts:blockEnds,:);
+    blockDouble = double(block);
+    [U,S,V] = svd(blockDouble);
+    coefficient1 = U(1,1);
+    coefficient2 = S(1,1);
+    coefficient3 = S(1,2);
+    blockIndex = blockIndex + 1;
+    blockCell{blockIndex, faceIndex} = [coefficient1 coefficient2 coefficient3];
+    blockStarts = blockStarts +(params.blockHeight - params.blockOverlap);   
+end
+% The code below is for Feature Quantization of each block and also assigns
+% labe to each and generates seqence.
+seq = zero(1,numbBlocks);
+for blockIndex = 1:numbBlocks
+    blockCoefficients = blockCell{blockIndex,1};
+    minCoefficients = params.coefStats(1,:);
+    maxCoefficients = params.coefStats(2,:);
+    blockCoefficients = max([blockCoefficients;minCoefficients]); % ensures that the extracted SVD coefficeints are not smaller or larger than coeffients in training set
+    blockCoefficients = min([blockCoefficients;maxCoefficients]);
+    deltaCoefficients = params.coefStats(3,:);
+    quant = floor((blockCoefficients-minCoefficients)./deltaCoefficients);
+    label = quant(1)*params.coefQaunt2*params.coefQunt3 + quant(2) * params.coefQuant3 + quant(3) + 1;
+    seq(1,blockIndex) = label;    
+end
+% Calculate sequence probailtiy for each face model in the database
+numbStudents = size(myDatabase,2);
+results = zero(1,numbStudents);
+for i = 1:numbStudents
+    TRANS = myDatabase{6,i}{1,1}; % transmission probability of trained model
+    EMIS = myDatabase{6,i}{1,2};  % emissionprobability of trained model
+    [ignore,logpseq] = hmmdecode(seq,TRANS,EMIS); % claculates the probability of a given observed sequence for a specific HMM model
+    p = exp(logpseq);
+    results(1,i) = P;
+    
+end
+[maxlogpseq,studentIndex] = max(results);
+if(displayFileName)
+fprintf([' This name of this student is ',Database,'and you are looking for',myDatabase{1,studentIndex},'.\n']);
+else
+    fprintf([' This name of this student is ',myDatabase{1,studentIndex},'.\n'])
+end

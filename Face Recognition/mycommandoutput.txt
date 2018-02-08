@@ -1,0 +1,5 @@
+Loading Faces ...
+Adrien_Brody Andre_Agassi Ann_Veneman Anna_Kournikova Ari_Fleischer Atal_Bihari_Vajpayee Bill_Clinton Bill_Gates Bill_McBride Bill_Simon 
+{Undefined function or variable 'Loading'.
+} 
+diary off

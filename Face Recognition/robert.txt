@@ -1,0 +1,2 @@
+diary('robert.txt')
+diary mycommandoutput.txt
